@@ -1,0 +1,99 @@
+// Schéma Prisma - Application IPTV
+// Base de données PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  phone         String?   @unique
+  passwordHash  String    @map("password_hash")
+  firstname     String?   @map("firstname")
+  lastname      String?   @map("lastname")
+  country       String    @default("SN") // SN, CI, ML, BJ, etc.
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastLogin     DateTime? @map("last_login")
+
+  subscriptions   Subscription[]
+  activeDevices   ActiveDevice[]
+  streamLogs      StreamLog[]
+  payments        Payment[]
+
+  @@map("users")
+}
+
+model Subscription {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  planType        String    @map("plan_type") // ANNUAL, TRIAL
+  amountPaid      Decimal?  @map("amount_paid") @db.Decimal(10, 2)
+  currency        String    @default("XOF")
+  startDate       DateTime  @map("start_date")
+  endDate         DateTime  @map("end_date")
+  isActive        Boolean   @default(true) @map("is_active")
+  autoRenew       Boolean   @default(false) @map("auto_renew")
+  paymentMethod   String?   @map("payment_method")
+  transactionId   String?   @map("transaction_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments  Payment[]
+
+  @@index([userId, isActive])
+  @@map("subscriptions")
+}
+
+model ActiveDevice {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  deviceFingerprint String  @unique @map("device_fingerprint")
+  deviceName       String?  @map("device_name")
+  ipAddress        String?  @map("ip_address")
+  userAgent        String?  @map("user_agent")
+  lastActivity     DateTime @default(now()) @map("last_activity")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("active_devices")
+}
+
+model StreamLog {
+  id             BigInt   @id @default(autoincrement())
+  userId         String?  @map("user_id")
+  channelName    String?  @map("channel_name")
+  ipAddress      String?  @map("ip_address")
+  durationSeconds Int?    @map("duration_seconds")
+  watchedAt      DateTime @default(now()) @map("watched_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, watchedAt])
+  @@map("stream_logs")
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  subscriptionId    String?  @map("subscription_id")
+  amount            Decimal  @db.Decimal(10, 2)
+  currency          String
+  paymentMethod     String?  @map("payment_method")
+  transactionId     String?  @unique @map("transaction_id")
+  status            String   // pending, approved, failed
+  providerResponse  Json?    @map("provider_response")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user         User          @relation(fields: [userId], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@map("payments")
+}

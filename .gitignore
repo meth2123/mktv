@@ -1,0 +1,25 @@
+# Env (secrets)
+.env
+.env.local
+.env.*.local
+
+# Source des chaînes — seul le proxy y accède, ne pas versionner (fichier sur le VPS uniquement)
+xtream_playlist.m3u
+**/xtream_playlist.m3u
+
+# Dépendances
+node_modules/
+
+# Build
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
