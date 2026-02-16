@@ -63,8 +63,9 @@ services:
       - key: MAX_STREAMS_PER_USER
         value: 1
 
-  - type: static
+  - type: web
     name: mktv-frontend
+    env: static
     rootDir: frontend
     plan: free
     buildCommand: npm install && npm run build
